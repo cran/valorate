@@ -1,0 +1,28 @@
+
+import(survival, graphics, utils, stats)
+importFrom("methods", "new")
+
+useDynLib(valorate)
+
+export(new.valorate, prepare.n1, 
+    valorate.p.value.normal,
+    valorate.p.value.chisq,
+    valorate.p.value.gaussian,
+    valorate.p.value.weibull,
+    valorate.p.value.beta,
+    valorate.estimate.beta.parameters,
+    valorate.estimate.weibull.parameters,
+    valorate.p.value.sampling,
+    valorate.p.value.all,
+    valorate.survdiff,
+    valorate.psurvdiff,
+    valorate.plot.empirical,
+    valorate.plot.kaplan,
+    valorate.risk,
+    valorate.plot.diff.empirical,
+    valorate.plot.subpop.empirical,
+    valorate.plot.subpop.empirical.to.0,
+    valorate.plot.subpop.empirical.scaled,
+    valorate.plot.sampling.densities,
+    valorate.plot.sampling.densities.figure
+    )

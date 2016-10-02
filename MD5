@@ -1,0 +1,14 @@
+947a7991822d8d4a93e6f7b802cb8113 *DESCRIPTION
+55146067167d1f1914db445cb0331f6a *NAMESPACE
+e5d47917a6dcf76cdc1b1f3366a81309 *R/valorate.R
+853133749c02a4d515eee2452c9dbf66 *man/New_Valorate.Rd
+f286e31a952fdc63cbbd2543de2584df *man/prepare.n1.Rd
+2a884af61558e03698bf966cb252178f *man/valorate-internal.Rd
+732911ecbaf082ad338ad4d533e0ef17 *man/valorate.p.value.Rd
+63c559200c2ec91cfa1096ad75133333 *man/valorate.plot.empirical.Rd
+f58e9ff56459f0a08262685a5fc9e337 *man/valorate.plot.kaplan.Rd
+b3c8a8097b6c38a138c3fa99050a7864 *man/valorate.plot.sampling.densities.Rd
+d53336cd2594ff9bb4274b2f73eb676a *man/valorate.plot.subpop.Rd
+1838078dee41db0780fcccadb38e658f *man/valorate.risk.Rd
+4e71826854e9d9f5ec7d004be94a5c5e *man/valorate.survdiff.Rd
+c5ec0ec4e7c2fa674d566bf3bbc9a342 *src/valorate_samplings.c
