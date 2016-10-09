@@ -9,7 +9,7 @@
   \code{new.valorate}.
 }
 \usage{
-new.valorate(time, censored, rank, sampling.size=max(10000, 2e+05/events), 
+new.valorate(time, status, censored, rank, sampling.size=max(10000, 2e+05/events), 
 	min.sampling.size=1000, tails=2, sampling.ties=30, 
 	weights.method=c("logrank", "Wilcoxon", "Tarone-Ware", "Peto", 
 		"Flemington-Harrington", "Trevino", "user")[1], 
@@ -19,8 +19,9 @@ new.valorate(time, censored, rank, sampling.size=max(10000, 2e+05/events),
 }
 \arguments{
   \item{time}{character or numeric vector representing the survival time. If character it could be "76+" representing 76 units of time and censored. In this case, the censored parameter should not be provided.}
-  \item{censored}{numberic vector representing the censoring status (1 for censored and 0 for event). This should be specified in the same order than the time argument and only if time was specified and does not include the censoring "+" indicator within.}
-  \item{rank}{a numeric or logical vector representing time-ordered subjects and whether they are events (1 or TRUE) or censoring observations (0 or FALSE). If rank is provided, time and censored should not. This argument is basically the 'c' vector of the log-rank formulation in the VALORATE publication.}
+  \item{status}{numeric or logical vector representing the status (1 for event and 0 for censoring). This should be specified in the same order than the time argument and only if time was specified and does not include the censoring "+" indicator within.}
+  \item{censored}{numeric or logical vector representing the censoring status (1 for censored and 0 for event). This should be specified in the same order than the time argument and only if time was specified and does not include the censoring "+" indicator within.}
+  \item{rank}{a numeric or logical vector representing time-ordered subjects and whether they are events (1 or TRUE) or censoring observations (0 or FALSE). If rank is provided, time and status, censored should not. This argument is basically the 'c' vector of the log-rank formulation in the VALORATE publication.}
   \item{sampling.size}{a numeric value representing the length of random samples of the survival group vector (basically the 'x' vector, see the publication and references) that will be used to estimate the log-rank distribution.  See the details section. The default is max(10000,200000/events).}
   \item{min.sampling.size}{a numeric value representing the minimum number of random samples of the survival group vector. See the details section. The default is 1000.}
   \item{tails}{a numeric value indicating whether the p-values generated will represent a 1 tail or two-tails (the default is two-tails).}
@@ -65,8 +66,10 @@ To save memory, save.sampling can be set to FALSE. In this case, valorate will e
   \item{samplings}{this is depracated and has been moved to each subpop.}
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorate}
+	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
+
 	David G. Kleinbaum and Mitchel Klein (2005). \emph{Survival Analysis: A Self-Learning Text}. Second Edition. New York: Springer.
+
 	David Collett (2004). \emph{Modelling survival data in medical research Collett David}. Second Edition. Chapman & Hall-CRC.
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}

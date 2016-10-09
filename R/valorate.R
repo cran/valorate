@@ -1,3 +1,4 @@
+# v3.07 - Bug Fixes in valorate.comb, valorate.plot.empirical, plots saying "Mutations", "Events". y.limit
 # v3.06 - Many small changes due package distribution
 # v3.05 - Add scaled plot of empirical distributions
 # v3.04 - Add adjust of p-values for two-tails tests
@@ -65,7 +66,7 @@ setClass("valorate", representation(
 
 
 # Create valorate object 
-new.valorate <- function(time, censored, rank, sampling.size=max(10000,200000/events), 
+new.valorate <- function(time, status, censored, rank, sampling.size=max(10000,200000/events), 
 	min.sampling.size=1000, tails=2, sampling.ties=30,
 	weights.method=c("logrank","Wilcoxon","Tarone-Ware","Peto","Flemington-Harrington","Trevino","user")[1], 
 	weights.parameters=list(p=1,q=1,t=3),
@@ -77,6 +78,7 @@ new.valorate <- function(time, censored, rank, sampling.size=max(10000,200000/ev
 #	(1) time=Survival Times and censored=censored indicator (1=censored, 0=dead)
 #	(2) time=Survival Times with censoring indicator "+" (censored=missing)
 #	(3) rank=0/1 ranked subjects, 0 is censored, 1 is event
+#	(4) time=Survival Times and status=status indicator (1=dead, 0=censored)
 
 	# Create valorate object
 	cPath <- "" # this may be an argument but was removed when setting up the R package
@@ -101,7 +103,9 @@ new.valorate <- function(time, censored, rank, sampling.size=max(10000,200000/ev
 	ties <- list()
 	tiesame <- list()
 
-	if (!missing(time) && !missing(censored) && missing(rank)) {
+	if (!missing(status)) censored <- 1 - 1*as.numeric(status)
+
+	if (!missing(time) && (!missing(censored) || !missing(status)) && missing(rank)) {
 		if (is.numeric(time) && (is.numeric(censored) || is.logical(censored)) && length(time) == length(censored)) {
 			o <- order(time)
 			s <- 1-(1*censored[o])
@@ -110,7 +114,7 @@ new.valorate <- function(time, censored, rank, sampling.size=max(10000,200000/ev
 		} else {
 			stop("time needs to be numeric, censored needs to be numeric (0/1) or logical.")
 		}
-	} else if (!missing(time) && missing(censored) && missing(rank)) {
+	} else if (!missing(time) && missing(censored) && missing(status) && missing(rank)) {
 		if (is.character(time)) {
 			newtime <- gsub("[^0-9Ee\\.\\+\\-]", "", time)
 			wc <- grep("\\+$",newtime)
@@ -127,7 +131,7 @@ new.valorate <- function(time, censored, rank, sampling.size=max(10000,200000/ev
 		} else {
 			stop("time needs to be character when not censored parameter is provided.")
 		}
-	} else if (missing(time) && missing(censored) && !missing(rank)) {
+	} else if (missing(time) && missing(censored) && missing(status) && !missing(rank)) {
 		if (is.numeric(rank) || is.logical(rank)) {
 			s <- 1*(rank==1)
 			vro@order <- 1:length(s)
@@ -136,7 +140,7 @@ new.valorate <- function(time, censored, rank, sampling.size=max(10000,200000/ev
 			stop("rank needs to be numeric (0/1) or logical.")
 		}
 	} else {
-		stop("Invalid input. Possible inputs: (1) time:numeric, censorded:numeric/logical, (2) time:character using '+' as censoring at the end, (3) rank:numeric/logical.")
+		stop("Invalid input.\nPossible inputs:\n\t(1) time:numeric & censorded:numeric/logical,\n\t(2) time:character using '+' as censoring at the end,\n\t(3) rank:numeric/logical,\n\t(4) time:numeric & status:numeric/logical.")
 	}
 
 	weights.method <- match.arg(weights.method, c("logrank","Wilcoxon","Tarone-Ware","Peto","Flemington-Harrington","Trevino","user"))	
@@ -261,6 +265,9 @@ valorate.hyper.density <- function(npop, nevents, nmut, kmut) {
 
 # utility function
 valorate.comb <- function(n, x) { 
+	if (n < x) {
+		return (0)
+	}
 	return ( exp(lfactorial(n) - (lfactorial(x)+lfactorial(n-x))) )
 }
 # utility function
@@ -715,12 +722,15 @@ valorate.p.value.sampling <- function(vro, vrsubo, lrv, z) {
 				} ))
 
 		} else {
-			nminus <- pmin(1,unlist(lapply(vrsubo$sampling, function(x) (1+sum(x < lrv, na.rm=TRUE)) / length(x))))
-			nplus <- pmin(1,unlist(lapply(vrsubo$sampling, function(x) (1+sum(x > lrv, na.rm=TRUE)) / length(x))))
+			nminus <- pmin(1,unlist(lapply(vrsubo$sampling, function(x) (1*0+sum(x <= lrv, na.rm=TRUE)) / length(x))))
+			nplus <- pmin(1,unlist(lapply(vrsubo$sampling, function(x) (1*0+sum(x >= lrv, na.rm=TRUE)) / length(x))))
 		}
 		pleft <- sum(nminus * vrsubo$k.density, na.rm=TRUE)
 		pright <- sum(nplus * vrsubo$k.density, na.rm=TRUE)
 		p <- min(pleft, pright)
+		if (p==0) {
+			p <- 1 / sum(vrsubo$combinations, na.rm=TRUE)
+		}
 		min(p, 1-p) * vro@tails
 	}
 }
@@ -770,11 +780,19 @@ valorate.survdiff <- function(vro, clusters, p.func=valorate.p.value.sampling) {
 	prepare.n1(vro, nx)
 	nxname <- paste("subpop", nx, sep="")
 
-	if (c1 < c2) {
+	if (c1 <= c2) {
 		inn1 <- (clusters == uc[1])*1
 	} else {
 		inn1 <- (clusters == uc[2])*1
 	}
+
+	#n <- vro@n
+	#x <- inn1
+	#s <- vro@s
+	#sx<- c(0,cumsum(x))[1:n]
+	#J <- 1:n
+	#L <- sum(s*(x-(nx-sx)/(n-J+1)))
+	#print(L)
 
 	# Calculate the V statistic
 	vcjx <- vro@subpop[[nxname]]$vcjx
@@ -851,7 +869,7 @@ valorate.survdiff <- function(vro, clusters, p.func=valorate.p.value.sampling) {
 	# Estimate p-value
 	p <- p.func(vro, vro@subpop[[nxname]], V, zv)
 	pn <- 1-pnorm(zv)
-	attr(p, c("Statistic(LR,Z,X2,LRunw,pZ,pX2)")) <- c(LR=V,Z=zv,X2=zv^2,LR.unweigthed=VZ,pZ=min(pn,1-pn) * vro@tails,pX2=1-pchisq(zv^2,df=1))
+	attr(p, c("Statistic(LR,Z,X2,LRunw,pZ,pX2,var)")) <- c(LR=V,Z=zv,X2=zv^2,LR.unweigthed=VZ,pZ=min(pn,1-pn) * vro@tails,pX2=1-pchisq(zv^2,df=1),var=sum(vj))
 	if (nsamp == 1 && vro@sampling.ties > 0) {
 		xp <- p.func(vro, vro@subpop[[nxname]], VV, zv)
 		attr(p, c("diff.ties_CI(VRmin,VRmax,pMin,pMax,n)")) <- c(VRmin=min(VV),VRmax=max(VV),pMin=min(xp),pMax=max(xp),n=length(VV))
@@ -877,13 +895,13 @@ valorate.psurvdiff <- function(vro, n1, v, z=NULL, p.func=valorate.p.value.sampl
 valorate.plot.empirical <- function(vro, n1, vstat=NULL, type="l", log="", add=FALSE, 
 	include=c("none","gaussian","beta","weibull","all")[1], 
 	xlab="valorate LR", ylab="density", 
-	main=paste("Empirical Density: Mutations=",n1,ifelse(is.null(vstat),"",paste0("\n(marked statistic at ",vstat,")"))), 
+	main=paste("Empirical Density: n1=",n1,ifelse(is.null(vstat),"",paste0("\n(marked statistic at ",vstat,")"))), 
 	samp=vro@sampling.size, smooth=10, legends=FALSE, shades=c(6,8), transparency=0.25, 
 	lwd=2, xlim=range(c(mids,vstat))+(c(-0.05,+0.05)*abs(range(c(mids,vstat)))), 
 	minL=NA, minR=NA, ...) {
 
 	if (length(n1) > 1) {
-		if (all(n1 %in% c(0,1))) {
+		if (all(n1 %in% c(0,1)) || length(n1) == vro@n) {
 			##### n1 represents risk groups, estimate statistic and real n1
 			vstat <- valorate.survdiff(vro, n1)
 			vstat <- attributes(vstat)[[1]][1]
@@ -1127,7 +1145,7 @@ valorate.risk <- function(vro, clusters) {
 
 
 
-valorate.plot.diff.empirical <- function(vro, n1, type="l", log="", include=c("gaussian","beta","weibull","all")[4], xlab="valorate LR", ylab="density", main=paste("Differences of Densities: Mutations=",n1), samp=vro@sampling.size, smooth=10, ylim=c(min(miny,-maxy),max(-miny,maxy)), legends=TRUE, ...) {
+valorate.plot.diff.empirical <- function(vro, n1, type="l", log="", include=c("gaussian","beta","weibull","all")[4], xlab="valorate LR", ylab="density", main=paste("Differences of Densities: n1=",n1), samp=vro@sampling.size, smooth=10, ylim=c(min(miny,-maxy),max(-miny,maxy)), legends=TRUE, ...) {
 	nx <- n1
 	prepare.n1(vro, nx)
 	nxname <- paste("subpop", nx, sep="")
@@ -1401,13 +1419,14 @@ valorate.plot.subpop.empirical.scaled <- function(vro, which=NULL,
 valorate.plot.sampling.densities <- function(vro, n1, 
 	type="l", log="", xlim=c(minx, maxx), ylim=c(miny, maxy), 
 	ncol=max(1,round(sqrt(n1)/2)), 
-	main="Sampling Densities Per Event and Weighted Sum",  
+	main="Sampling Densities Per Event (k) and Weighted Sum",  
 	rug=TRUE, add=FALSE, w.sum=TRUE, sampling=FALSE, 
 	weighted=FALSE,
 	legends.cex=1, 
 	weights.cex=1,
 	weights.pos=c("middle","left","right")[3],
 	w.sum.lwd=3,
+	y.limit=1e-13,
 	...) {
 
 	nx <- n1
@@ -1425,8 +1444,8 @@ valorate.plot.sampling.densities <- function(vro, n1,
 	h <- (if (weighted) propdens else 1)
 	minx <- min(sp$min)
 	maxx <- max(sp$max)	
-	miny <- min(min(unlist(lapply(dens, function(x) min(x$y)))), min(sp$empirical))+1e-13
-	my <- unlist(lapply(dens, function(x) max(x$y)))*1+1e-13
+	miny <- min(min(unlist(lapply(dens, function(x) min(x$y)))), min(sp$empirical))+y.limit
+	my <- unlist(lapply(dens, function(x) max(x$y)))*1+y.limit
 	maxy <- max(my*h)
 	minxdens <- min(unlist(lapply(dens, function(x) min(x$x))))
 	maxxdens <- max(unlist(lapply(dens, function(x) max(x$x))))
@@ -1471,7 +1490,7 @@ valorate.plot.sampling.densities.figure <- function(vro, n1,
 	type="l", log="", xlim=c(minx, maxx), ylim=c(miny, maxy), main="", 
 	rug=1, rug.size=1, 
 	sub="P(L|k) Events k=",
-	w.sum=TRUE, sampling=FALSE, ncol=1, ...) {
+	w.sum=TRUE, sampling=FALSE, ncol=1, y.limit=1e-13, ...) {
 
 	nx <- n1
 	prepare.n1(vro, nx)
@@ -1483,8 +1502,8 @@ valorate.plot.sampling.densities.figure <- function(vro, n1,
 	#maxx <- max(unlist(lapply(dens, function(x) max(x$x))))
 	minx <- min(sp$min)
 	maxx <- max(sp$max)	
-	miny <- min(min(unlist(lapply(dens, function(x) min(x$y)))), min(sp$empirical))+1e-13
-	my <- unlist(lapply(dens, function(x) max(x$y)))*1+1e-13
+	miny <- min(min(unlist(lapply(dens, function(x) min(x$y)))), min(sp$empirical))+y.limit
+	my <- unlist(lapply(dens, function(x) max(x$y)))*1+y.limit
 	maxy <- max(my)
 	minxdens <- min(unlist(lapply(dens, function(x) min(x$x))))
 	maxxdens <- max(unlist(lapply(dens, function(x) max(x$x))))

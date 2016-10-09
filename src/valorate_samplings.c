@@ -1,3 +1,5 @@
+// v1.41 - BUG in RANDOM Numbers, it was biased toward larger censorings
+// v1.4 - NO BUG
 // v1.3 - Use of all combinations array
 // v1.2 - Weights implementation
 // v1.1 - Ties implementation
@@ -24,7 +26,7 @@
 
 void valorate_samplings(double* v, int* psim, int* pn, int* pk, int* pnx, int* wcensored, int* pncensored, int *wevents, int* pnevents, double* weightedevents, double* vcjx, int* pvcjx_n, int* inn1, int* ldx, int* prandomize, int* pdebug, int* allComb) {
 
-	int i,j,m,r;
+	int i,j,m,r,l;
 	double V;
 	int sim = *psim;
 	int n = *pn;
@@ -70,7 +72,12 @@ void valorate_samplings(double* v, int* psim, int* pn, int* pk, int* pnx, int* w
 				m = nx-k;
 				if (ncensored < m) m = ncensored; // FOR SECURITY and to avoid cycling
 				for (j=0; j < m; j++) {
-					for (r = RANDOM_INTEGER % ncensored; inn1[wcensored[r]-1] == 1; r = (r+1) % ncensored);
+					//for (r = RANDOM_INTEGER % ncensored; inn1[wcensored[r]-1] == 1; r = (r+1) % ncensored);
+					//inn1[wcensored[r]-1] = 1;
+					//for (r = 0; inn1[wcensored[r]-1] == 1; r = (r+1) % ncensored);
+					for (r = 0, l = RANDOM_INTEGER % (ncensored-j); l >= 0; l--) {
+						for (r = (r+1) % ncensored; inn1[wcensored[r]-1] == 1; r = (r+1) % ncensored);
+					}
 					inn1[wcensored[r]-1] = 1;
 				}
 			}
@@ -80,18 +87,26 @@ void valorate_samplings(double* v, int* psim, int* pn, int* pk, int* pnx, int* w
 				m = k;
 				if (nevents < k) m = nevents; // FOR SECURITY and to avoid cycling 
 				for (j=0; j < m; j++) {
-					for (r = RANDOM_INTEGER % nevents; inn1[wevents[r]-1] == 1; r = (r+1) % nevents);
+					//for (r = RANDOM_INTEGER % nevents; inn1[wevents[r]-1] == 1; r = (r+1) % nevents);
+					//inn1[wevents[r]-1] = 1;
+					//for (r = 0; inn1[wevents[r]-1] == 1; r = (r+1) % nevents);
+					for (r = 0, l = RANDOM_INTEGER % (nevents-j); l >= 0; l--) {
+						for (r = (r+1) % nevents; inn1[wevents[r]-1] == 1; r = (r+1) % nevents);
+					}
 					inn1[wevents[r]-1] = 1;
 				}
 			}			
 		}
 		// Calculate the V statistic
-		// einn1 <- inn1[wevents] // einn1 is not necessary because array is indexed as 0 but it is needed in wevents
-		// ldx <- nx - cumsum(c(0,inn1))[wevents] // ldx will be increased dinamically instead of saving an array
+		// einn1 <- inn1[wevents]#1+inn1[wevents]
+		// ldx <- nx - cumsum(c(0,inn1))[wevents]
+		// os <- if (vcjx.n == 1) 0 else round(runif(1)*(vcjx.n-1))*events # OffSet of the matrix of ties, each of n columns
 		// V <- 0
 		// for (j in 1:events) {
-		// 		if (ldx[j] > 0) V <- V + einn1[j] - vcjx[ldx[j],j]
+		// 	if (ldx[j] == 0) break;
+		// 	V <- V + weightev[j] * (einn1[j]-vcjx[ldx[j],j+os]) #vcjx[ldx[j],j,einn1[j]]
 		// }
+
 		ldx[0] = nx - 1; // in 0 indexes
 		for (j=1; j < n; j++) {
 			ldx[j] = ldx[j-1] - inn1[j-1];

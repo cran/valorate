@@ -35,7 +35,7 @@ The intended 'user' function in VALORATE is valorate.p.value.sampling, which is 
 \value{the estimated p-value (times tails).
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorate}
+	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{

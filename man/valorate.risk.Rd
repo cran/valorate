@@ -19,7 +19,7 @@ A coxph model depending on clusters is run to establish the risk/hazard ratio.
 A number representing the relative risk. The confidence interval, p-value, and the coxph model are included as attributes.
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorate}
+	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{

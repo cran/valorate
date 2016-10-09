@@ -19,7 +19,7 @@ The main function to estimate the p-value of the difference of two survival curv
 \value{the estimated p-value.
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorate}
+	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{

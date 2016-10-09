@@ -12,11 +12,13 @@ valorate.plot.sampling.densities(vro, n1,
   rug, add, w.sum, sampling, 
   weighted,legends.cex, weights.cex,
   weights.pos, w.sum.lwd=3,
+  y.limit=1e-13,
   ...)
 
 valorate.plot.sampling.densities.figure(vro, n1, type, log, 
   xlim, ylim, main, rug, rug.size, 
-  sub, w.sum, sampling, ncol, ...)
+  sub, w.sum, sampling, ncol, 
+  y.limit=1e-13, ...)
 
 }
 \arguments{
@@ -40,6 +42,7 @@ valorate.plot.sampling.densities.figure(vro, n1, type, log,
   \item{...}{parameters forwarded to plot.}
   \item{rug.size}{determine the size of rugs made in valorate.plot.sampling.densities.figure}
   \item{sub}{specifies the character to include in each plot.}
+  \item{y.limit}{specifies the lowest density value. The default is 1e-13. This is useful for log="y".}
 }
 \details{
 Plots the densities of each co-occurrence that shapes the final log-rank distribution for a n1 group size.
@@ -49,7 +52,7 @@ Plots the densities of each co-occurrence that shapes the final log-rank distrib
 Nothing.
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorate}
+	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{
