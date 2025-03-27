@@ -30,7 +30,7 @@ Plots the estimated Kaplan-Meier survival curves from data.
 Nothing.
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
+	Trevino et al. 2016 \url{https://bioinformatics.mx/index.php/bioinfo-tools/}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{

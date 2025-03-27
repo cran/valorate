@@ -17,7 +17,7 @@ prepare.n1(vro, n1)
 \value{The updated valorate object. This is a S4 method operating an object, so the valorate object specified in argument will be updated with the estimations of the distribution of the log-rank for n1 subjects.
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
+	Trevino et al. 2016 \url{https://bioinformatics.mx/index.php/bioinfo-tools/}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{

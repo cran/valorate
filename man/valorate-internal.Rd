@@ -10,7 +10,7 @@
 \alias{valorate.perm}
 \alias{valorate.cat}
 \alias{valorate.mav}
-\alias{plot.kaplan.valorate}
+\alias{plot_kaplan_valorate}
 \alias{valorate.estimate.beta.parameters}
 \alias{valorate.estimate.weibull.parameters}
 \alias{valorate.psurvdiff}

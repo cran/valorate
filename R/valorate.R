@@ -1,3 +1,7 @@
+# PENDING: Variance per event instead of per rank
+# v4.02 - Added random simulations (prepare.n1 and valorate.random.n1)
+# v4.01 - Added Sup & Inf
+# v4.00 - Added Variance Stabilized (Raw LR, Z option, X2 option, X2-LIKE-option, )
 # v3.07 - Bug Fixes in valorate.comb, valorate.plot.empirical, plots saying "Mutations", "Events". y.limit
 # v3.06 - Many small changes due package distribution
 # v3.05 - Add scaled plot of empirical distributions
@@ -25,6 +29,12 @@
 
 #require(methods)
 #require(survival)
+
+# STEPS FOR BUILDING THE PACKAGE
+# Mac:
+# R CMD build valorate
+# R CMD check valorate_1.0-4.tar.gz 
+# Subir a CRAN
 
 setClass("valorate", representation(
 	s="numeric", 
@@ -72,7 +82,8 @@ new.valorate <- function(time, status, censored, rank, sampling.size=max(10000,2
 	weights.parameters=list(p=1,q=1,t=3),
 	weights=NULL, verbose=FALSE, save.sampling=TRUE, 
 	method="C",
-	estimate.distribution.parameters=c("empirical","gaussian","beta","weibull")[1]
+	estimate.distribution.parameters=c("empirical","gaussian","beta","weibull")[1],
+	estimate.type=c("log-rank","z-log-rank","chisq-log-rank","like-chisq-log-rank","super-log-rank")
 	) {
 # Input: 
 #	(1) time=Survival Times and censored=censored indicator (1=censored, 0=dead)
@@ -103,7 +114,7 @@ new.valorate <- function(time, status, censored, rank, sampling.size=max(10000,2
 	ties <- list()
 	tiesame <- list()
 
-	if (!missing(status)) censored <- 1 - 1*as.numeric(status)
+	if (!missing(status) && missing(censored)) censored <- 1 - 1*as.numeric(status)
 
 	if (!missing(time) && (!missing(censored) || !missing(status)) && missing(rank)) {
 		if (is.numeric(time) && (is.numeric(censored) || is.logical(censored)) && length(time) == length(censored)) {
@@ -197,8 +208,12 @@ new.valorate <- function(time, status, censored, rank, sampling.size=max(10000,2
 	if (!missing(censored)) vro@parameters$censored <- censored
 	if (!missing(rank)) vro@parameters$rank <- rank
 
+	estimate.type = match.arg(estimate.type)
 	events <- sum(s)
 	vro@s <- s 								# subjects ranked by time and event indicated by 1 (0 for censoring)
+	vro@parameters$c_vector <- as.integer(s)# vector s but integer to be used for C code
+	vro@parameters$estimate.type <- estimate.type[1]
+	vro@parameters$estimate.tipe <- as.integer(which(c("log-rank","z-log-rank","chisq-log-rank","like-chisq-log-rank","super-log-rank") == estimate.type))
 	vro@events <- as.integer(events) 		# the total number of events
 	vro@n <- as.integer(length(s))			# the total number of subjects
 	vro@verbose <- verbose					# verbose while running ?
@@ -299,6 +314,12 @@ valorate.mav <- function(x,n=5,avoid.na=FALSE){
 
 # Prepare object to estimate n1 population
 prepare.n1 <- function(vro, n1) {
+	prepare.run.n1(vro, n1)
+}
+
+
+# Internal function...
+prepare.run.n1 <- function(vro, n1, random=0) {
 	nxname <- paste("subpop", n1, sep="")
 	if (nxname %in% ls(vro@subpop)) {
 		# already exists, it doesn't need to be recomputed
@@ -308,6 +329,7 @@ prepare.n1 <- function(vro, n1) {
 	##### Prepare object to add this n1 population
 
 	#load parameters from object
+
 	n <- vro@n
 	s <- vro@s
 	events <- vro@events
@@ -380,6 +402,12 @@ prepare.n1 <- function(vro, n1) {
 
 
 	#Estimate densities per each combination of events:censored for n1 subjects
+	estype <- vro@parameters$estimate.type
+	if (estype == "like-chisq-log-rank") {
+		LRfunc <- function(o,e) { ((o-e)^2)/e }
+	} else {
+		LRfunc <- function(o,e) { o-e }
+	}
 	dens <- list()
 	v <- numeric(min.sampling.size)
 	wcensored <- vro@wcensored #which(s[1:n] == 0)
@@ -393,9 +421,20 @@ prepare.n1 <- function(vro, n1) {
 	ldx  <- integer(n)
 	valorate.cat(vro, "Simulating taking",nx,"samples of",n,"having",events,"events:\n")
 	first <- as.integer(1)
-	for (k in 0:ne) {
+	if (random > 0) {
+		allCombMatrix <- 0
+		v <- numeric(random)
+		v <- .C("valorate_samplings", v=v, as.integer(random), n, as.integer(0),
+				 nx, wcensored, ncensored, wevents, nevents, weightev, vcjx, vcjx.n, inn1, ldx, 
+				 first, verbose, allCombMatrix, vro@parameters$c_vector, vro@parameters$estimate.tipe, 
+				 as.integer(2), ### This is the random generation parameter
+				 PACKAGE="valorate")$v
+		return (v)
+	}
+	for (k in as.integer(0:ne)) {
 		allComb <- NULL
 		allCombMatrix <- 0
+		rndtype <- as.integer(0)
 		ncomb <- valorate.comb(n-events,nx-k) * valorate.comb(events,k)
 		combinations[k+1] <- ncomb
 		sim <- as.integer(round(max(min.sampling.size, min(ncomb*4, sampling.size*k.dens[k+1])))) #as.integer(min(ncomb*2, sampling.size)) #round(max(min.sampling.size, min(ncomb*2, sampling.size*k.dens[k+1])))
@@ -418,6 +457,7 @@ prepare.n1 <- function(vro, n1) {
 			}
 			storage.mode(allComb) <- "integer"
 			sim <- as.integer(round(ncomb,0))
+			rndtype <- as.integer(1)
 		}
 		if (sim != length(v)) {
 			v <- numeric(sim)
@@ -431,6 +471,7 @@ prepare.n1 <- function(vro, n1) {
 				allCombMatrix <- allComb
 			}
 			if (vro@method == "R") {
+				doVARZ = (estype %in% c("z-log-rank","chisq-log-rank"))
 				for (i in 1:sim) {
 					if (i %% 1000 == 0) {
 						valorate.cat(vro, ".")
@@ -457,16 +498,38 @@ prepare.n1 <- function(vro, n1) {
 					ldx <- nx - cumsum(c(0,inn1))[wevents]
 					os <- if (vcjx.n == 1) 0 else round(runif(1)*(vcjx.n-1))*events # OffSet of the matrix of ties, each of n columns
 					V <- 0
+					Vsup <- -Inf
+					Vinf <- Inf
 					for (j in 1:events) {
 						if (ldx[j] == 0) break;
-						V <- V + weightev[j] * (einn1[j]-vcjx[ldx[j],j+os]) #vcjx[ldx[j],j,einn1[j]]
+						V <- V + weightev[j] * LRfunc(einn1[j],vcjx[ldx[j],j+os]) #vcjx[ldx[j],j,einn1[j]]
+						if (V > Vsup) Vsup <- V
+						if (V < Vinf) Vinf <- V
+					}
+					if (doVARZ) {
+						n   <- vro@n
+						n1j <- (sum(inn1)-(c(0,cumsum(inn1))[1:n]))[wevents]
+						nj  <- (n:1)[wevents]
+						oj  <- (vro@s)[wevents]
+						vj  <- oj*(n1j/nj)*(1-n1j/nj)*(nj-oj) / pmax(1,nj-1)
+						varz <- sum(vj)
+						if (estype == "z-log-rank") {
+							V <- V / sqrt(varz)
+						} else if (estype == "chisq-log-rank") {
+							V <- V*V / varz
+						} else if (estype == "super-log-rank") {
+							V <- ifelse(abs(Vsup) > abs(Vinf),Vsup,Vinf)
+						}
+					} else if (estype == "super-log-rank") {
+						V <- ifelse(abs(Vsup) > abs(Vinf),Vsup,Vinf)
 					}
 					v[i] <- V
 					#v[i] <- sum(weightev*(einn1-vcjx[ldx,1:events+os]))
 				}
 				dens[[k+1]] <- v
 			} else {
-				v <- .C("valorate_samplings", v=v, sim, n, k, nx, wcensored, ncensored, wevents, nevents, weightev, vcjx, vcjx.n, inn1, ldx, first, verbose, allCombMatrix, PACKAGE="valorate")$v
+				#v <- .C("valorate_samplings", v=v, sim, n, k, nx, wcensored, ncensored, wevents, nevents, weightev, vcjx, vcjx.n, inn1, ldx, first, verbose, allCombMatrix, PACKAGE="valorate")$v
+				v <- .C("valorate_samplings", v=v, sim, n, k, nx, wcensored, ncensored, wevents, nevents, weightev, vcjx, vcjx.n, inn1, ldx, first, verbose, allCombMatrix, vro@parameters$c_vector, vro@parameters$estimate.tipe, rndtype, PACKAGE="valorate")$v
 				dens[[k+1]] <- v					
 			}
 			first <- as.integer(0)
@@ -485,6 +548,7 @@ prepare.n1 <- function(vro, n1) {
 	empirical <- 0
 	empirical.breaks <- seq(nmn*ifelse(nmn<0,1.001,.999),nmx*ifelse(nmx>0,1.001,.999),len=1001)
 	emp.hist <- list()
+	empiricalDensY <- 0
 	for (k in 0:ne) {
 		dens.hist <- hist(pmax(pmin(nmx,dens[[k+1]]),nmn),plot=FALSE,breaks=empirical.breaks)
 		smv <- valorate.mav(dens.hist$count/sum(dens.hist$count), 10)
@@ -492,7 +556,14 @@ prepare.n1 <- function(vro, n1) {
 		empirical <- empirical + k.dens[k+1] * smv
 		#empirical <- empirical + k.dens[k+1] * dens.hist$count/sum(dens.hist$count)
 		emp.hist[[k+1]] <- hist(dens[[k+1]],plot=FALSE,breaks=1001)
+		if (length(dens[[k+1]]) == 1) {
+			xd <- density(c(dens[[k+1]],dens[[k+1]]), from=nmn, to=nmx)
+		} else {
+			xd <- density(dens[[k+1]], from=nmn, to=nmx)
+		}
+		empiricalDensY <- empiricalDensY + k.dens[k+1] * xd$y
 	}
+	empiricalDensX <- xd$x
 
 	vro@subpop[[nxname]] <- list(
 		nx=nx,
@@ -509,7 +580,8 @@ prepare.n1 <- function(vro, n1) {
 		combinations=combinations,
 		empirical=empirical,
 		empirical.breaks=empirical.breaks,
-		emp.hist=emp.hist)
+		emp.hist=emp.hist,
+		empirical.density=list(x=empiricalDensX, y=empiricalDensY))
 	if (vro@save.sampling) {
 		vro@subpop[[nxname]]$sampling <- dens
 	}
@@ -537,6 +609,11 @@ prepare.n1 <- function(vro, n1) {
 	return (invisible(vro))
 }
 
+
+# Simulate 'simulations' random values of the x vector having n1 mutations...
+valorate.random.n1 <- function(vro, n1, simulations=1000) {
+	prepare.run.n1(vro, n1, simulations)
+}
 
 
 valorate.p.value.normal <- function(vro, vrsubo, lrv, z) {
@@ -779,6 +856,7 @@ valorate.survdiff <- function(vro, clusters, p.func=valorate.p.value.sampling) {
 	nx <- min(c1, c2)
 	prepare.n1(vro, nx)
 	nxname <- paste("subpop", nx, sep="")
+	estype <- vro@parameters$estimate.type
 
 	if (c1 <= c2) {
 		inn1 <- (clusters == uc[1])*1
@@ -817,6 +895,12 @@ valorate.survdiff <- function(vro, clusters, p.func=valorate.p.value.sampling) {
 	VR <- numeric(nsamp)
 	VRZ <- numeric(nsamp)
 
+	if (estype == "like-chisq-log-rank") {
+		LRfunc <- function(o,e) { ((o-e)^2)/e }
+	} else {
+		LRfunc <- function(o,e) { o-e }
+	}
+
 	for (ivr in 1:nsamp) {
 		if (ivr > 1) {
 			# resample only active tie positions
@@ -842,7 +926,8 @@ valorate.survdiff <- function(vro, clusters, p.func=valorate.p.value.sampling) {
 				v <- 0
 				for (j in 1:events) {
 					if (ldx[j] == 0) break;
-					v <- v + weightev[j]*(einn1[j] - vcjx[ldx[j],j+offset]) #vcjx[ldx[j],j,einn1[j]]
+					#v <- v + weightev[j]*(einn1[j] - vcjx[ldx[j],j+offset]) #vcjx[ldx[j],j,einn1[j]]
+					v <- v + weightev[j]*LRfunc(einn1[j], vcjx[ldx[j],j+offset]) #vcjx[ldx[j],j,einn1[j]]
 				}
 				VV[i] <- v
 			}
@@ -862,9 +947,16 @@ valorate.survdiff <- function(vro, clusters, p.func=valorate.p.value.sampling) {
 	nj  <- (n:1)[wevents]
 	oj  <- (vro@s)[wevents]
 	vj  <- oj*(n1j/nj)*(1-n1j/nj)*(nj-oj) / pmax(1,nj-1)
+	varz <- sum(vj)
 
+	#c("log-rank","z-log-rank","chisq-log-rank","like-chisq-log-rank")
+	if (estype == "z-log-rank") {
+		V <- V / sqrt(varz)
+	} else if (estype == "chisq-log-rank") {
+		V <- V*V / varz
+	}
 	names(V) <- NULL
-	zv <- VZ/sqrt(sum(vj))
+	zv <- VZ/sqrt(varz)
 
 	# Estimate p-value
 	p <- p.func(vro, vro@subpop[[nxname]], V, zv)
@@ -1047,7 +1139,7 @@ valorate.plot.empirical <- function(vro, n1, vstat=NULL, type="l", log="", add=F
 
 
 
-plot.kaplan.valorate <- function(data, time, status, logrank=NULL, plogrank=NULL, main= "", cluster, risk.groups=length(unique(cluster)), draw.main=FALSE, short.names=FALSE, mark.cex=1, mark=3, margins=TRUE, col=1:risk.groups+1, col.main=16, pName="p") {
+plot_kaplan_valorate <- function(data, time, status, logrank=NULL, plogrank=NULL, main= "", cluster, risk.groups=length(unique(cluster)), draw.main=FALSE, short.names=FALSE, mark.cex=1, mark=3, margins=TRUE, col=1:risk.groups+1, col.main=16, pName="p") {
 	#library(survival)
 	ocox <- NULL
 	try(ocox <- coxph(Surv(time, status) ~ ., data.frame(t(data))))
@@ -1113,7 +1205,7 @@ valorate.plot.kaplan <- function(vro, clusters, p=valorate.survdiff(vro, cluster
 	status <- rep(1,length(time))
 	status[grep("\\+",vro@time)] <- 0
 
-	plot.kaplan.valorate(data=matrix(clusters[vro@order],nrow=1), plogrank=p, logrank=attributes(p)[[1]][1], 
+	plot_kaplan_valorate(data=matrix(clusters[vro@order],nrow=1), plogrank=p, logrank=attributes(p)[[1]][1], 
 		time=time, status=status, 
 		main=main, short.names=short.names, draw.main=draw.all,
 		cluster=1+as.vector(clusters[vro@order]), 
@@ -1146,6 +1238,9 @@ valorate.risk <- function(vro, clusters) {
 
 
 valorate.plot.diff.empirical <- function(vro, n1, type="l", log="", include=c("gaussian","beta","weibull","all")[4], xlab="valorate LR", ylab="density", main=paste("Differences of Densities: n1=",n1), samp=vro@sampling.size, smooth=10, ylim=c(min(miny,-maxy),max(-miny,maxy)), legends=TRUE, ...) {
+	if (length(n1) > 1) {
+		n1 <- sum(n1)
+	}
 	nx <- n1
 	prepare.n1(vro, nx)
 	nxname <- paste("subpop", nx, sep="")
@@ -1552,5 +1647,15 @@ valorate.plot.sampling.densities.figure <- function(vro, n1,
 	axis(4,at=axTicks(2),round(max(sp$empirical)*axTicks(2)/max(axTicks(2)),5))
 	par(mar=mar)
 	invisible(list(x=xaprx, y=yaprx))
+}
+
+
+valorate.power <- function(vro, n1, cutoff=0.05) {
+
+	nx <- n1
+	prepare.n1(vro, nx)
+
+
+
 }
 

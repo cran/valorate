@@ -2,9 +2,11 @@
 import(survival, graphics, utils, stats)
 importFrom("methods", "new")
 
-useDynLib(valorate)
+useDynLib(valorate, .registration = TRUE)
 
-export(new.valorate, prepare.n1, 
+export(new.valorate, 
+    prepare.n1,
+    valorate.random.n1,
     valorate.p.value.normal,
     valorate.p.value.chisq,
     valorate.p.value.gaussian,

@@ -9,13 +9,16 @@
   \code{new.valorate}.
 }
 \usage{
-new.valorate(time, status, censored, rank, sampling.size=max(10000, 2e+05/events), 
+new.valorate(time, status, censored, rank, 
+  sampling.size=max(10000, 2e+05/events), 
 	min.sampling.size=1000, tails=2, sampling.ties=30, 
 	weights.method=c("logrank", "Wilcoxon", "Tarone-Ware", "Peto", 
 		"Flemington-Harrington", "Trevino", "user")[1], 
 	weights.parameters=list(p=1, q=1, t=3), weights, 
     verbose=FALSE, save.sampling=TRUE, method="C", 
-    estimate.distribution.parameters=c("empirical","gaussian","beta","weibull")[1])
+    estimate.distribution.parameters=c("empirical","gaussian","beta","weibull")[1],
+    estimate.type=c("log-rank","z-log-rank","chisq-log-rank",
+      "like-chisq-log-rank","super-log-rank"))
 }
 \arguments{
   \item{time}{character or numeric vector representing the survival time. If character it could be "76+" representing 76 units of time and censored. In this case, the censored parameter should not be provided.}
@@ -32,6 +35,7 @@ new.valorate(time, status, censored, rank, sampling.size=max(10000, 2e+05/events
   \item{verbose}{a logical value indicating whether estimation should show messages of partial calculations. The default is FALSE.}
   \item{save.sampling}{a logical value indicating whether all sampling will be saved within the VALORATE object. The default is TRUE. This can be used to avoid saving all sampling and save memory. See details about memory usage.}
   \item{method}{a character value either "R" or "C" that specify the implemented method of calculation. Both should generate same values but "C" is by far faster (default="C"). This can be used in cases where C calculations does not work for any reason or to compare methods and algorithms.}
+  \item{estimate.type}{The type of statistic to be recorded and operated. The original and default is the 'log-rank' which is the raw statistic (LR). The 'z-log-rank' is the standardized version in which the log-rank is divided by standard deviation (LR/SD). The 'chisq-log-rank' is the chi-squared version of the statistic (LR^2/VAR). All should provide similar estimations but distributions are a bit different and z- and chi- should give more stable estimations.}
   \item{estimate.distribution.parameters}{a character vector containing subsets of "empirical","gaussian","beta",and "weibull". The default is "empirical". This has not been extensively explored but attempts to fit the observed log-rank distribution using sums of other distributions whose parameters are estimated after sampling. The "empirical" means nothing basically whereas "gaussian" for example means the estimation of mean and standard deviation of the observed conditional log-ranks. The results of these estimations can be viewd by \link{valorate.plot.empirical} or within the corresponding variables of the @subpop environment. This is experimental and is not intended for most users and applictions.}
 }
 \details{The values in time and censored arguments do not need to be sorted by time but it is assumed that further specification of survival groups (e. g. calls to valorate.survdiff) will be provided in the corresponding order than that of this parameter. This function generates a VALORATE object prepared to run further analyses on the estimation of log-rank distributions for the specified population. See the 'value' section for details. 
@@ -66,7 +70,7 @@ To save memory, save.sampling can be set to FALSE. In this case, valorate will e
   \item{samplings}{this is depracated and has been moved to each subpop.}
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
+	Trevino et al. 2016 \url{https://bioinformatics.mx/index.php/bioinfo-tools/}
 
 	David G. Kleinbaum and Mitchel Klein (2005). \emph{Survival Analysis: A Self-Learning Text}. Second Edition. New York: Springer.
 

@@ -52,7 +52,7 @@ Plots the densities of each co-occurrence that shapes the final log-rank distrib
 Nothing.
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
+	Trevino et al. 2016 \url{https://bioinformatics.mx/index.php/bioinfo-tools/}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{

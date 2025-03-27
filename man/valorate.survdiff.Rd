@@ -10,16 +10,16 @@ valorate.survdiff(vro, clusters, p.func)
 }
 \arguments{
   \item{vro}{the valorate object.}
-  \item{clusters}{a numerical or logical vector representing the two survival groups encoded in 1/TRUE for those 'mutated' (in the group of interest) or 1/FALSE for those who not. Basically this value is the 'x' vector in the VALORATE re-formulation. See references.}
+  \item{clusters}{a numerical or logical vector representing the two survival groups encoded in 1/TRUE for those 'mutated' (in the group of interest) or 0/FALSE for those who not. Basically this value is the 'x' vector in the VALORATE re-formulation. See references.}
   \item{p.func}{the function that provides the estimation. The default is \link{valorate.p.value.sampling}. See \link{valorate.p.value}.}
 }
 \details{
-The main function to estimate the p-value of the difference of two survival curves under the VALORATE algorithm. Because the definition of the survival group as '1' or '0' is arbitrary, the actual calculation is performed over the less frequent group. From clusters and s=sum(clusters), n1 is determined as the min(s, length(clusters)-s). Then a call for prepare.n1 is performed and finally the p-value estimations. The statistics are added as attributes.
+The main function to estimate the p-value of the difference of two survival curves under the VALORATE algorithm. Because the definition of the survival group as '1' or '0' is arbitrary, the actual calculation is performed over the less frequent group. From clusters and s=sum(clusters), n1 is determined as the min(s, length(clusters)-s). Then a call for prepare.n1 is performed and finally the p-value estimations are made. The statistics are added as attributes (LR:log-rank statistic, Z:z-normalized log-rank statistic, X2:X2-normalized log-rank statistic, LR.unweigthed: raw log-rank statistic which can be different to LR if a weighting scheme was used, pZ, pX2: corresponding p-values using the Z and X2 distribution, and var: variance).
 }
 \value{the estimated p-value.
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
+	Trevino et al. 2016 \url{https://bioinformatics.mx/index.php/bioinfo-tools/}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{

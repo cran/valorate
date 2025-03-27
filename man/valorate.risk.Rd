@@ -19,13 +19,13 @@ A coxph model depending on clusters is run to establish the risk/hazard ratio.
 A number representing the relative risk. The confidence interval, p-value, and the coxph model are included as attributes.
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
+	Trevino et al. 2016 \url{https://bioinformatics.mx/index.php/bioinfo-tools/}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{
   \code{\link{new.valorate}}.
   \code{\link{valorate.survdiff}}.
-  \code{\link{coxph}} (survival package).
+  \code{\link[survival:coxph]{survival::coxph}} (survival package).
 }
 \examples{
 ## Create a random population of 100 subjects 

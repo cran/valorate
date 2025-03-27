@@ -43,7 +43,7 @@ valorate.plot.subpop.empirical.scaled(vro, which,
 Nothing.
 }
 \references{
-	Trevino et al. 2016 \url{http://bioinformatica.mty.itesm.mx/valorateR}
+	Trevino et al. 2016 \url{https://bioinformatics.mx/index.php/bioinfo-tools/}
 	}
 \author{Victor Trevino \email{vtrevino@itesm.mx}}
 \seealso{
@@ -57,7 +57,7 @@ subjects <- numeric(100)
 subjects[sample(100,20)] <- 1
 vo <- new.valorate(rank=subjects, sampling.size=100000, verbose=TRUE)
 
-for (i in c(5,10,20,30,40,50)) {
+for (i in c(5,10,20,50)) {
   groups <- numeric(100)
   groups[sample(100,i)] <- 1 
   valorate.survdiff(vo, groups) 

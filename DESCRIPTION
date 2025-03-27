@@ -1,6 +1,6 @@
 Package: valorate
-Version: 1.0-1
-Date: 2016-10-08
+Version: 1.0-5
+Date: 2025-03-26
 Title: Velocity and Accuracy of the LOg-RAnk TEst
 Authors@R: c(person("Victor", "Trevino", role = c("aut", "cre"),
     email = "vtrevino@itesm.mx"))
@@ -19,10 +19,10 @@ Description: The algorithm implemented in this package was
     where mutations and events are both present. The estimation 
     of conditional distributions is quite fast allowing the 
     analysis of large datasets in few minutes 
-    <http://bioinformatica.mty.itesm.mx/valorate>.
+    <https://bioinformatics.mx/index.php/bioinfo-tools/>.
 License: GPL (>= 2)
-URL: http://bioinformatica.mty.itesm.mx/valorate
+URL: https://bioinformatics.mx/index.php/bioinfo-tools/
 NeedsCompilation: yes
-Packaged: 2016-10-09 20:35:41 UTC; victortrevino
+Packaged: 2025-03-27 02:30:21 UTC; victortrevino
 Repository: CRAN
-Date/Publication: 2016-10-09 23:23:03
+Date/Publication: 2025-03-27 04:00:03 UTC
